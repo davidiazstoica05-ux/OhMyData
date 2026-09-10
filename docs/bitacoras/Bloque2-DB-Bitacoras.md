@@ -5,7 +5,7 @@
  
 ---
  
-## Semana 1 — Esquema de la base de datos
+## Punto 1 — Esquema de la base de datos
  
 ### Decisiones tomadas
  
@@ -19,7 +19,7 @@ Tablas: `searches` (id, query, timestamp), `pages` (id, url, title, extracted_co
  
 ---
  
-## Semana 2 — FTS5: tabla virtual y primeras búsquedas
+## Punto 2 — FTS5: tabla virtual y primeras búsquedas
  
 ### Decisiones tomadas
  
@@ -77,5 +77,28 @@ Para justificar la arquitectura de *La Cajita* ante NLnet, lanzamos 5 consultas 
 
 ---
 
+## Punto 3 — Tokenizadores, stemming e idioma español 
 
+### Pipeline Lingüístico: Tokenización vs Stemming
+
+Para optimizar el índice invertido y permitir coincidencias semánticas reales, se formalizó la distinción técnica de las dos etapas del procesamiento de texto:
+
+* **Tokenizador (Segmentación):** Trocea la cadena de texto continua en unidades léxicas independientes (*tokens* o palabras) mediante expresiones regulares y delimitadores (`[a-záéíóúüñ0-9]+`), normalizando a minúsculas y descartando signos de puntuación.
+* **Stemming (Reducción morfológica):** Opera sobre los tokens ya segmentados. Aplica algoritmos de recorte heurístico para remover sufijos, desinencias verbales, plurales y marcas de género, colapsando distintas formas gramaticales a una raíz invariable común (ej. *privacidad* / *privacidades* → `privacid`; *correr* / *corriendo* → `corr`).
+
+$$\text{Texto plano} \longrightarrow \mathbf{Tokenizador} \longrightarrow [\text{Tokens}] \longrightarrow \mathbf{Stemmer} \longrightarrow [\text{Raíces}]$$
+
+---
+
+### Decisión de Arquitectura: Estrategia Bilingüe (Inglés vs Español)
+
+La divergencia morfológica entre ambos idiomas y las limitaciones nativas de SQLite motivaron una solución técnica diferenciada para cada caso:
+
+* **Inglés (Nativo en motor):** Se incorpora la directiva `tokenize='porter'` en la configuración de la tabla virtual FTS5. Dado que SQLite trae el algoritmo de Porter precompilado en C en su binario estándar, el motor procesa el *stemming* anglosajón en memoria sin penalización de I/O ni sobrecarga en el intérprete de Python.
+* **Español (Preprocesamiento en aplicación):** Al carecer SQLite de soporte nativo para reglas morfológicas en español sin compilar extensiones dinámicas en C, se implementó un pipeline en el backend mediante la librería `snowballstemmer`.
+* **Ratificación del desacoplamiento de triggers:** El procesamiento en español valida la decisión de descartar los *triggers* de sincronización automática. La ingesta de datos se consolida en un flujo manual explícito desde Python:
+  1. Persiste el contenido íntegro y original en la tabla relacional `pages` (para renderizado final al usuario).
+  2. Ejecuta el pipeline `tokenize` + `snowballstemmer` sobre el texto.
+  3. Inserta las raíces resultantes en `pages_fts` vinculadas al mismo `rowid`.
+* **Principio de Simetría en Consultas:** Para garantizar que el índice invertido resuelva coincidencias, la cadena de búsqueda introducida por el usuario atraviesa el mismo preprocesamiento en Python antes de invocar la cláusula `MATCH`.
  
