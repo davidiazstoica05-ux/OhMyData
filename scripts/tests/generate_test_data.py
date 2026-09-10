@@ -24,7 +24,8 @@ from pathlib import Path
 DB_PATH = Path(__file__).resolve().parent.parent / "db" / "MyData.db"
 NUM_ROWS = 50000
 
-# Base sentences translated to Spanish to test with real terms like "privacidad".
+# Content kept in Spanish so it matches the terms used in queries-match.py /
+# queries-like.py (e.g. "privacidad", "datos").
 # Note: with 2-4 topics picked out of 15 per row, every topic ends up
 # appearing in a fairly large fraction of rows (~15-27%).
 TOPICS = [
@@ -95,7 +96,7 @@ def benchmark_query(cur, sql, params, repeats=200):
 def run_comparison(cur, term, total_rows, label):
     match_sql = "SELECT title FROM pages_fts WHERE pages_fts MATCH ?"
     like_sql = "SELECT title FROM pages WHERE extracted_content LIKE ?"
-    
+
     like_params = (f"%{term}%",)
     match_params = (term,)
 
@@ -132,7 +133,7 @@ def main():
         insert_page(
             cur,
             url=f"https://filler.example.com/page-{i}",
-            title=f"Página de relleno {i}",
+            title=f"Filler page {i}",
             content=generate_content(),
             content_hash=f"fillerhash{i}",
         )
@@ -141,7 +142,7 @@ def main():
     insert_page(
         cur,
         url="https://filler.example.com/needle",
-        title="Página aguja",
+        title="Needle page",
         content=f"Esta única página contiene la palabra {NEEDLE_TERM} para pruebas.",
         content_hash="needlehash",
     )
@@ -152,10 +153,10 @@ def main():
     print(f"Insertion completed in {insert_end - insert_start:.3f} seconds.\n")
 
     # --- Comparison 1: common term ---
-    run_comparison(cur, "privacidad", total_rows, "Término común")
+    run_comparison(cur, "privacidad", total_rows, "Common term")
 
     # --- Comparison 2: needle in a haystack ---
-    run_comparison(cur, NEEDLE_TERM, total_rows, "Término único")
+    run_comparison(cur, NEEDLE_TERM, total_rows, "Unique term")
 
     con.close()
 
