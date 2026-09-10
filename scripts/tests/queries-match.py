@@ -1,17 +1,17 @@
 """
-Ejecuta las 5 consultas clave de FTS5 para el cuaderno de bitácora,
-midiendo el tiempo de respuesta promedio y mostrando el recuento real.
+Runs the 5 key FTS5 queries for the logbook, measuring the average
+response time and showing the actual result count.
 """
 
 import sqlite3
 import time
 from pathlib import Path
 
-# Misma ruta que en generate_test_data.py
+# Same path as in generate_test_data.py
 DB_PATH = Path(__file__).resolve().parent.parent / "db" / "MyData.db"
 
 def benchmark_query(cur, sql, params=(), repeats=200):
-    # Warm-up para cargar en caché de SQLite
+    # Warm-up to load into SQLite's cache
     cur.execute(sql, params).fetchall()
 
     start = time.perf_counter()
@@ -19,60 +19,60 @@ def benchmark_query(cur, sql, params=(), repeats=200):
         cur.execute(sql, params).fetchall()
     end = time.perf_counter()
 
-    return (end - start) / repeats * 1000  # milisegundos
+    return (end - start) / repeats * 1000  # milliseconds
 
-def test_consulta(cur, label, sql):
+def test_query(cur, label, sql):
     print(f"\n{label}")
     print(f"SQL: {sql}")
-    
-    # Obtener resultados reales
-    resultados = cur.execute(sql).fetchall()
-    
-    # Medir tiempo
-    tiempo_ms = benchmark_query(cur, sql)
-    
-    print(f"-> Resultados devueltos: {len(resultados)}")
-    print(f"-> Tiempo de ejecución:  {tiempo_ms:.4f} ms")
-    
-    # Mostrar una muestra si hay resultados para comprobar el BM25
-    if resultados:
-        print(f"-> Muestra (Top 2): {resultados[:2]}")
+
+    # Get the actual results
+    results = cur.execute(sql).fetchall()
+
+    # Measure timing
+    time_ms = benchmark_query(cur, sql)
+
+    print(f"-> Results returned: {len(results)}")
+    print(f"-> Execution time:   {time_ms:.4f} ms")
+
+    # Show a sample if there are results, to check the BM25 ranking
+    if results:
+        print(f"-> Sample (Top 2): {results[:2]}")
     print("-" * 50)
 
 def main():
     try:
         con = sqlite3.connect(DB_PATH)
         cur = con.cursor()
-        
-        print("Iniciando batería de pruebas FTS5 (Promedio de 200 iteraciones)...")
-        
-        # 1. Búsqueda con muchos resultados
-        test_consulta(cur, 
-            "1. Búsqueda con muchos resultados", 
+
+        print("Starting FTS5 test battery (average of 200 iterations)...")
+
+        # 1. Search with many results
+        test_query(cur,
+            "1. Search with many results",
             "SELECT rowid, title FROM pages_fts WHERE pages_fts MATCH 'privacidad'")
-        
-        # 2. Búsqueda con pocos resultados (Usamos 'xilofonomarcador' que es tu término único)
-        test_consulta(cur, 
-            "2. Búsqueda con pocos resultados", 
+
+        # 2. Search with few results (using 'xilofonomarcador', our unique term)
+        test_query(cur,
+            "2. Search with few results",
             "SELECT rowid, title FROM pages_fts WHERE pages_fts MATCH 'xilofonomarcador'")
-        
-        # 3. Ranking BM25 en acción
-        test_consulta(cur, 
-            "3. Ranking BM25 (Ordenado por relevancia)", 
+
+        # 3. BM25 ranking in action
+        test_query(cur,
+            "3. BM25 ranking (ordered by relevance)",
             "SELECT rowid, title, rank FROM pages_fts WHERE pages_fts MATCH 'datos' ORDER BY rank")
-        
-        # 4. Búsqueda de frase exacta
-        test_consulta(cur, 
-            "4. Búsqueda de frase exacta (Phrase Query)", 
+
+        # 4. Exact phrase search
+        test_query(cur,
+            "4. Exact phrase search (Phrase Query)",
             "SELECT rowid, title FROM pages_fts WHERE pages_fts MATCH '\"motor de búsqueda\"'")
-        
-        # 5. Búsqueda con operadores booleanos
-        test_consulta(cur, 
-            "5. Búsqueda con operadores booleanos (AND, OR)", 
+
+        # 5. Search with boolean operators
+        test_query(cur,
+            "5. Search with boolean operators (AND, OR)",
             "SELECT rowid, title FROM pages_fts WHERE pages_fts MATCH 'privacidad AND (datos OR publicidad)'")
-            
+
     except sqlite3.OperationalError as e:
-        print(f"Error: No se pudo conectar a la base de datos o falta la tabla. Detalles: {e}")
+        print(f"Error: Could not connect to the database or the table is missing. Details: {e}")
     finally:
         if 'con' in locals():
             con.close()
