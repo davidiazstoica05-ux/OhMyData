@@ -1,6 +1,8 @@
 import sqlite3
 from search.local_search import search
 from db.connection import get_connection
+from datetime import datetime
+from repository.searches import insert_searches
 
 
 def main():
@@ -12,7 +14,15 @@ def main():
         print("-" * 50)
 
         while True:
+           
             user_query = input("\nSearch query: ").strip()
+            query_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            #falta colocar que cuando se pulse q, exit, quit o salir se salga del bucle 
+            # y no se haga la busqueda ni se inserte en la base de datos
+            insert_searches(user_query, cur, con, query_time)
+            
+            
 
             if user_query.lower() in ("q", "exit", "quit", "salir"):
                 break
