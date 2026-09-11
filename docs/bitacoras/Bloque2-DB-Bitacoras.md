@@ -102,3 +102,37 @@ La divergencia morfológica entre ambos idiomas y las limitaciones nativas de SQ
   3. Inserta las raíces resultantes en `pages_fts` vinculadas al mismo `rowid`.
 * **Principio de Simetría en Consultas:** Para garantizar que el índice invertido resuelva coincidencias, la cadena de búsqueda introducida por el usuario atraviesa el mismo preprocesamiento en Python antes de invocar la cláusula `MATCH`.
  
+## Punto 4 — Modularización, Persistencia de Consultas (`searches`) y Cierre de Bloque
+
+### Reestructuración Arquitectónica (Separación por Capas)
+Se abandonaron los scripts monolíticos de prueba en favor de una estructura modular basada en el patrón repositorio:
+* **Capa de Conexión (`scripts/db/connection.py`):** Centraliza la resolución de rutas relativas con `pathlib.Path` y provee la conexión a `MyData.db` de forma limpia[cite: 2].
+* **Capa de Repositorio (`scripts/repository/`):**
+  * `pages.py`: Encapsula la inserción dual manual (`pages` en texto plano y `pages_fts` stemizado) y añade la función de consulta por URL única (`findPageByUrl`) para evitar duplicados[cite: 2].
+  * `searches.py`: Maneja la persistencia de las búsquedas realizadas por el usuario en la tabla `searches`, registrando `query` y `timestamp`[cite: 2].
+* **Capa Lingüística (`scripts/steming.py`):** Mantiene aislado el procesamiento léxico con `snowballstemmer`, exponiendo las funciones puras `tokenize`, `stem_text` y `prepare_fts_query`[cite: 2].
+* **Capa de Búsqueda (`scripts/search/local_search.py`):** Encapsula la ejecución de consultas `MATCH` sobre FTS5, calculando y ordenando los resultados mediante el algoritmo de relevancia nativo `bm25(pages_fts)`[cite: 2].
+* **Aislamiento de Tests (`scripts/testing/`):** Todos los benchmarks (`queries-like.py`, `queries-match.py`) y la generación de datos masivos con pruebas de aguja y stemming se trasladaron a su propio subdirectorio[cite: 2].
+* **Resolución de Imports:** Se integró `sys.path.insert(0, ...)` en los módulos secundarios para garantizar que los imports relativos funcionen independientemente de si el script se ejecuta desde la raíz o desde una subcarpeta[cite: 2].
+
+---
+
+### Implementación del Registro de Búsquedas (`searches`)
+Se cerró el ciclo de vida de la memoria digital conectando las consultas entrantes con la tabla `searches` del esquema relacional[cite: 2]:
+* Cada término introducido por el usuario se guarda en base de datos junto con su marca temporal precisa (`%Y-%m-%d %H:%M:%S`), permitiendo auditar el historial y preparar la futura relación N:M con `search_page`[cite: 2].
+* El flujo mantiene la simetría: mientras en `searches` se almacena la consulta original para el usuario, en memoria se extrae su versión stemizada para cruzarla con el índice FTS5[cite: 2].
+
+---
+
+### CLI Interactivo (`scripts/main.py`)
+Se implementó un bucle interactivo de terminal que sirve de cliente local para el sistema[cite: 2]:
+* Escucha consultas en tiempo real por teclado, permite comandos de salida limpios (`q`, `exit`, `quit`, `salir`) y gestiona excepciones operacionales de SQLite cerrando las conexiones de forma segura[cite: 2].
+
+
+---
+
+### Gobernanza del Repositorio y Licencia
+En cumplimiento estricto de los requisitos de software libre de NLnet y del marco de trabajo acordado en `reglas-proyecto.md`[cite: 2]:
+* **Licencia GNU AGPLv3:** Se incorporó formalmente la licencia copyleft fuerte `LICENSE` para garantizar que cualquier servicio de red derivado de *La Cajita* deba mantener su código abierto[cite: 2].
+* **Higiene de Git (`.gitignore`):** Se blindó el repositorio contra la subida accidental de bases de datos pesadas (`*.db`, `*.db-wal`, `*.db-shm`), archivos temporales de Python (`__pycache__/`, `.pyc`) y entornos virtuales (`.venv/`)[cite: 2].
+* **Estado de Entrega:** Bloque 2 (SQLite + FTS5) queda completado y testeado en su rama correspondiente, listo para recibir la ingesta real desde SearXNG (Bloque 4a)[cite: 2].
