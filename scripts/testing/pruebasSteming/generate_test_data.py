@@ -25,16 +25,12 @@ Usage:
     python3 generate_test_data.py
 """
 
-import sqlite3
 import random
 import time
-from pathlib import Path
 
+from db.conection import get_connection
 from steming import stem_text
 
-# Resolves relative to this file's location, so it works
-# regardless of the directory you run the script from.
-DB_PATH = Path(__file__).resolve().parent.parent / "db" / "MyData.db"
 NUM_ROWS = 50000
 
 # Content kept in Spanish so it matches the terms used in queries-match.py /
@@ -149,7 +145,7 @@ def run_comparison(cur, term, total_rows, label):
 
 
 def main():
-    con = sqlite3.connect(DB_PATH)
+    con = get_connection()
     cur = con.cursor()
 
     print(f"Inserting {NUM_ROWS} filler rows (content stemmed before indexing)...")
