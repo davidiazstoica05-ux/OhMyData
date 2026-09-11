@@ -2,11 +2,9 @@
 Runs the same 5 logical queries using LIKE (sequential scan).
 """
 
-import sqlite3
 import time
-from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "db" / "MyData.db"
+from db.conection import get_connection
 
 def benchmark_query(cur, sql, params=(), repeats=200):
     cur.execute(sql, params).fetchall()  # Warm-up
@@ -30,7 +28,7 @@ def test_query(cur, label, sql, params=()):
     print("-" * 50)
 
 def main():
-    con = sqlite3.connect(DB_PATH)
+    con = get_connection()
     cur = con.cursor()
 
     print("Starting LIKE test battery (average of 200 iterations)...")

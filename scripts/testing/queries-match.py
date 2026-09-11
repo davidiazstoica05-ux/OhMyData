@@ -5,10 +5,8 @@ response time and showing the actual result count.
 
 import sqlite3
 import time
-from pathlib import Path
 
-# Same path as in generate_test_data.py
-DB_PATH = Path(__file__).resolve().parent.parent / "db" / "MyData.db"
+from db.conection import get_connection
 
 def benchmark_query(cur, sql, params=(), repeats=200):
     # Warm-up to load into SQLite's cache
@@ -41,7 +39,7 @@ def test_query(cur, label, sql):
 
 def main():
     try:
-        con = sqlite3.connect(DB_PATH)
+        con = get_connection()
         cur = con.cursor()
 
         print("Starting FTS5 test battery (average of 200 iterations)...")
