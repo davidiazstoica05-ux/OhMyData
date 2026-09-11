@@ -1,66 +1,82 @@
-import re
-import snowballstemmer
+import sqlite3
+import time
+from pathlib import Path
 
-# Instantiate the Spanish stemmer (keeps the rules loaded in memory)
-_stemmer = snowballstemmer.stemmer("spanish")
+from steming import prepare_fts_query
 
-# Regex that captures whole words, including Spanish characters (á, é, í, ó, ú, ñ, ü)
-WORD_PATTERN = re.compile(r"[a-záéíóúüñ0-9]+")
-
-
-def tokenize(text: str) -> list[str]:
-    """Cleans the text, lowercases it, and extracts only valid tokens."""
-    if not text:
-        return []
-    return WORD_PATTERN.findall(text.lower())
+DB_PATH = Path(__file__).resolve().parent.parent / "db" / "MyData.db"
 
 
-def stem_text(text: str) -> str:
-    """Reduces a full text to its lexical roots.
-    This is the version stored in the 'pages_fts' virtual table.
+def benchmark_query(cur, sql, params=(), repeats=50):
+    """Runs the query once (untimed) plus a small number of timed repeats,
+    since interactive queries don't need the same statistical rigor as
+    the benchmark scripts."""
+    cur.execute(sql, params).fetchall()  # warm-up
+
+    start = time.perf_counter()
+    for _ in range(repeats):
+        cur.execute(sql, params).fetchall()
+    end = time.perf_counter()
+
+    return (end - start) / repeats * 1000  # ms
+
+
+def search(cur, user_query: str):
+    # The search term must go through the same stemming process as the
+    # stored content, or the roots won't match (see stemizador.py).
+    fts_query = prepare_fts_query(user_query)
+
+    if not fts_query:
+        print("The query didn't produce any valid search term after processing.")
+        return
+
+    sql = """
+        SELECT rowid, title, bm25(pages_fts) AS relevance
+        FROM pages_fts
+        WHERE pages_fts MATCH ?
+        ORDER BY relevance
     """
-    tokens = tokenize(text)
-    if not tokens:
-        return ""
 
-    # stemWords applies morphological reduction in batch to the token list
-    stemmed_words = _stemmer.stemWords(tokens)
+    results = cur.execute(sql, (fts_query,)).fetchall()
+    time_ms = benchmark_query(cur, sql, (fts_query,))
 
-    # Join the roots with a single space, for FTS5
-    return " ".join(stemmed_words)
+    print(f"\nOriginal query: {user_query}")
+    print(f"Processed for FTS5: {fts_query}")
+    print(f"-> Results found: {len(results)}")
+    print(f"-> Average time: {time_ms:.4f} ms")
 
-
-def prepare_fts_query(query: str) -> str:
-    """Prepares the query entered by the user.
-    Both the stored document and the search query must go through the
-    exact same algorithm so that the roots match.
-    """
-    tokens = tokenize(query)
-    if not tokens:
-        return ""
-
-    stemmed_tokens = _stemmer.stemWords(tokens)
-    return " ".join(stemmed_tokens)
+    if results:
+        print("\nTop results (most relevant first):")
+        for rowid, title, relevance in results[:10]:
+            print(f"  [{relevance:.3f}] {title} (rowid={rowid})")
+    print("-" * 50)
 
 
-# --- Practical demonstration ---
+def main():
+    try:
+        con = sqlite3.connect(DB_PATH)
+        cur = con.cursor()
+
+        print("La Cajita — interactive local search (type 'exit' to quit)")
+        print("-" * 50)
+
+        while True:
+            user_query = input("\nSearch query: ").strip()
+
+            if user_query.lower() in ("exit", "quit", "salir"):
+                break
+
+            if not user_query:
+                continue
+
+            search(cur, user_query)
+
+    except sqlite3.OperationalError as e:
+        print(f"Error: Could not connect to the database or the table is missing. Details: {e}")
+    finally:
+        if 'con' in locals():
+            con.close()
+
+
 if __name__ == "__main__":
-    # 1. Example with noun variations
-    sample_text = "La privacidad de los usuarios y las privacidades digitales."
-    print("Original text: ", sample_text)
-    print("Stemmed text:  ", stem_text(sample_text))
-    # Output: 'la privacid de los usuari y las privacid digital'
-
-    # 2. Example with verb variations
-    verb_1 = stem_text("correr")
-    verb_2 = stem_text("corriendo")
-    verb_3 = stem_text("corrieron")
-    print(f"\nVerbs ('correr', 'corriendo', 'corrieron') -> ['{verb_1}', '{verb_2}', '{verb_3}']")
-    # All return 'corr'
-
-    # 3. How the user would search
-    user_query = "¿Cómo proteger mis privacidades?"
-    processed_query = prepare_fts_query(user_query)
-    print("\nOriginal query:", user_query)
-    print("Query for FTS5:", processed_query)
-    # MATCH 'com proteg mis privacid' -> Finds 'privacidad'
+    main()
