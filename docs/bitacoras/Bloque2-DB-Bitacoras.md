@@ -128,7 +128,6 @@ Se cerró el ciclo de vida de la memoria digital conectando las consultas entran
 Se implementó un bucle interactivo de terminal que sirve de cliente local para el sistema[cite: 2]:
 * Escucha consultas en tiempo real por teclado, permite comandos de salida limpios (`q`, `exit`, `quit`, `salir`) y gestiona excepciones operacionales de SQLite cerrando las conexiones de forma segura[cite: 2].
 
-
 ---
 
 ### Gobernanza del Repositorio y Licencia
