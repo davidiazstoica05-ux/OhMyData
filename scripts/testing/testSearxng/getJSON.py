@@ -1,7 +1,6 @@
 import requests
+import trafilatura
 
-
-query = input();
 
 response = requests.get(
     
@@ -17,7 +16,18 @@ data = response.json()
 #A los diccionarios se puede acceder directamente
 results = data["results"]
 
+
+
+
 for resultado in results: 
+    
+    #Existe en labbd?
+    #no: 
+    html = trafilatura.fetch_url(resultado["url"])
+    texto = trafilatura.extract(html)
+    #Se guarda
+    #Si: 
+    #Se rescata desde la bbdd
 
     print(resultado["title"],resultado["content"],"----",resultado["url"],"engine:",resultado["engine"])
 
