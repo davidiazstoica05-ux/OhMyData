@@ -43,7 +43,6 @@ def search_searxng(cur, user_query):
                 print(f"No se pudo extraer contenido de: {url}")
                 continue
 
-            content_hash = hashlib.sha256(texto.encode()).hexdigest()
             page_id = pages.insert_page(cur, url, resultado["title"], texto, content_hash)
 
         print(resultado["title"], "----", url, "engine:", resultado["engine"])
