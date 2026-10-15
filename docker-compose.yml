@@ -1,0 +1,17 @@
+version: '3.8'
+
+services: {}
+
+networks:
+  proxy_net:
+    driver: bridge
+  frontend_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+    internal: true
+
+volumes:
+  omd-db-data:
+  gateway-state:
+  slm-weights:
