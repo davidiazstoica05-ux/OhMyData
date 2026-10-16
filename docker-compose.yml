@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   omd-gateway:
     image: tailscale/tailscale:latest
