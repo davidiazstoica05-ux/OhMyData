@@ -1,6 +1,55 @@
 version: '3.8'
 
-services: {}
+services:
+  omd-gateway:
+    image: tailscale/tailscale:latest
+    container_name: omd-gateway
+    hostname: omd-cajita
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    volumes:
+      - /dev/net/tun:/dev/net/tun
+      - gateway-state:/var/lib/tailscale
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:-}
+      - TS_EXTRA_ARGS=--login-server=https://tu-subdominio.duckdns.org:8443
+      - TS_STATE_DIR=/var/lib/tailscale
+    networks:
+      - proxy_net
+    restart: unless-stopped
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: omd-orchestrator
+    restart: unless-stopped
+    volumes:
+      - omd-db-data:/app/db
+      - ./scripts:/app/scripts
+    networks:
+      - proxy_net
+      - frontend_net
+      - backend_net
+    depends_on:
+      - omd-gateway
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: omd-searxng
+    restart: unless-stopped
+    networks:
+      - frontend_net
+
+  slm-engine:
+    image: ollama/ollama:latest
+    container_name: omd-slm
+    restart: unless-stopped
+    volumes:
+      - slm-weights:/root/.ollama
+    networks:
+      - backend_net
 
 networks:
   proxy_net:
