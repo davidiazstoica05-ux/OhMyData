@@ -179,7 +179,7 @@ def main():
             extracted_content=generate_content(),
             content_hash=f"fillerhash{i}" if is_full else None,
             etag=f'"etag-{i}"' if is_full else None,
-            state_content='Full' if is_full else 'Snippet',
+            state_content='FULL' if is_full else 'SNIPPET',
             original_disappear = 0 if is_full else 1
         )
 

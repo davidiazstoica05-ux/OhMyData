@@ -8,9 +8,9 @@ import steming
 
 
 
-def compare_hashes(local_hash, new_hash):
+def compare_hashes(local_hash, remote_hash):
     
-    return hmac.compare_digest(local_hash, new_hash)
+    return hmac.compare_digest(local_hash, remote_hash )
         
     
 def create_hash(text):

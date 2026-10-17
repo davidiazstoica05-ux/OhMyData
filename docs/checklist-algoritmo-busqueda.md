@@ -17,7 +17,7 @@ Orden de trabajo recomendado: esquema y repositorio primero (desbloquean todo lo
 - [x] Función que compara dos hashes y devuelve si coinciden.
 - [x] Función que calcula el hash de un texto.
 - [x] Probada suelta con textos iguales, distintos y con espacios extra.
-- [ ] Pendiente menor: que `compare_hashes` devuelva `True`/`False` en vez de imprimir, y las pruebas dentro de `if __name__ == "__main__":`.
+- [x] Pendiente menor: que `compare_hashes` devuelva `True`/`False` en vez de imprimir, y las pruebas dentro de `if __name__ == "__main__":`.
 
 ## 2. Esquema de la BBDD (`db/schema.sql`) — NUEVO, hacerlo antes que el resto
 
@@ -29,8 +29,8 @@ Orden de trabajo recomendado: esquema y repositorio primero (desbloquean todo lo
 
 ## 3. `repository/pages.py` — ampliar
 
-- [ ] Guardar una página **solo con snippet** (título, URL, snippet de SearXNG), stemizando el snippet para `pages_fts`. Usa `findPageByUrl` para no duplicar.
-- [ ] `insert_page` acepta y guarda las cabeceras nuevas.
+- [x] Guardar una página **solo con snippet** (título, URL, snippet de SearXNG), stemizando el snippet para `pages_fts`. Usa `findPageByUrl` para no duplicar.
+- [x] `insert_page` acepta y guarda las cabeceras nuevas.
 - [ ] Función para **sustituir el contenido** de una página ya existente (snippet → completo, o versión vieja → nueva). Trampa clave: antes de sobrescribir, borrar la entrada de `pages_fts` pasando **exactamente los valores stemizados que se indexaron** (recalculados con `stem_text` sobre el texto viejo), y luego insertar los nuevos. Nunca usar el comando `rebuild` de FTS5.
 - [ ] Función para marcar una página como verificada (solo actualiza `last_verified_at`).
 - [ ] Función para marcar una página como "original desaparecido", sin borrar la copia.
