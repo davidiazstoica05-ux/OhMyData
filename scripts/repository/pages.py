@@ -11,7 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from steming import stem_text
 
 
-def insert_page(cur, url, title, content, content_hash):
+#Recordar que la tabla ha cambiado y ha crecido, por lo que hay que cambiar esta parte 
+def insert_page(cur, url, title, content, content_hash, etag, last_modified):
     """Inserts a page into 'pages' (original, readable text) and mirrors
     a STEMMED version of title/content into 'pages_fts' (no triggers, so
     this has to be done manually, using the same rowid).
@@ -21,9 +22,9 @@ def insert_page(cur, url, title, content, content_hash):
     (see prepare_fts_query in steming.py, used by search/local_search.py).
     """
     cur.execute(
-        """INSERT INTO pages (url, title, extracted_content, content_hash)
+        """INSERT INTO pages (url, title, extracted_content, content_hash, etag, last_modified)
            VALUES (?, ?, ?, ?)""",
-        (url, title, content, content_hash),
+        (url, title, content, content_hash, etag, last_modified),
     )
     page_id = cur.lastrowid
 

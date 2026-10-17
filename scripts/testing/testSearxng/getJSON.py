@@ -5,7 +5,7 @@ import trafilatura
 response = requests.get(
     
     "http://localhost:8080/search",
-    params={"q": query, "format": "json"}
+    params={"q": "Como crear un funcion en python" , "format": "json"}
 ) 
 response.raise_for_status()
 

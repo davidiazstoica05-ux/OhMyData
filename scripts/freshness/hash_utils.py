@@ -10,14 +10,8 @@ import steming
 
 def compare_hashes(local_hash, new_hash):
     
-    if hmac.compare_digest(local_hash, new_hash):
+    return hmac.compare_digest(local_hash, new_hash)
         
-    
-        return True
-            
-    else:
-         
-       return False
     
 def create_hash(text):
     
