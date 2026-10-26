@@ -11,7 +11,7 @@ services:
       - gateway-state:/var/lib/tailscale
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY:-}
-      - TS_EXTRA_ARGS=--login-server=https://tu-subdominio.duckdns.org:8443
+      - TS_EXTRA_ARGS=--login-server=${OMD_CONTROL_SERVER}
       - TS_STATE_DIR=/var/lib/tailscale
     networks:
       - proxy_net
@@ -23,6 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: omd-orchestrator
     restart: unless-stopped
+    stdin_open: true  
+    tty: true         
     volumes:
       - omd-db-data:/app/db
       - ./scripts:/app/scripts
