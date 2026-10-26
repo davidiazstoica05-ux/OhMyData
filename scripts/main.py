@@ -3,7 +3,10 @@ from search.local_search import search
 from db.connection import get_connection
 from datetime import datetime
 from repository.searches import insert_searches
+import query_searxng
+import repository.pages
 
+pages = repository.pages
 
 def main():
     try:
@@ -22,15 +25,17 @@ def main():
             # y no se haga la busqueda ni se inserte en la base de datos
             insert_searches(user_query, cur, con, query_time)
             
-            
-
             if user_query.lower() in ("q", "exit", "quit", "salir"):
                 break
 
             if not user_query:
+                                
                 continue
 
-            search(cur, user_query)
+
+            
+            
+            
 
     except sqlite3.OperationalError as e:
         print(f"Error: Could not connect to the database or the table is missing. Details: {e}")

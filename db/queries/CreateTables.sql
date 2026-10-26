@@ -13,7 +13,14 @@ CREATE TABLE pages (
     extracted_content TEXT,
     content_hash TEXT,
     saved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    last_changed_at DATETIME
+    last_changed_at DATETIME,
+    etag TEXT,
+    last_modified_header DATETIME,
+    last_verified_at DATETIME,
+    state_content TEXT,
+    original_disappear INTEGER
+        -- BOOLEAN 0 OR 1. 0 == FALSE/1 == TRUE
+
 );
 
 -- N:M junction table between searches and pages

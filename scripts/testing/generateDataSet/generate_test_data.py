@@ -27,8 +27,11 @@ Usage:
 
 import random
 import time
+import sys
+from pathlib import Path
 
-from db.conection import get_connection
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+from db.connection import get_connection
 from steming import stem_text
 
 NUM_ROWS = 50000
@@ -65,7 +68,17 @@ FILLER = [
 # Unique word that appears nowhere else in the dataset
 NEEDLE_TERM = "xilofonomarcador"
 
+create_table = Path(__file__).resolve().parent.parent.parent.parent / "db" / "queries" / "CreateTables.sql"
 
+def recreate_tables(cur):
+    cur.executescript("""
+        DROP TABLE IF EXISTS search_page;
+        DROP TABLE IF EXISTS pages_fts;
+        DROP TABLE IF EXISTS pages;
+        DROP TABLE IF EXISTS searches;
+    """)
+    cur.executescript(create_table.read_text(encoding="utf-8"))
+    
 def generate_content():
     sentences = random.sample(TOPICS, k=random.randint(2, 4))
     sentences += random.sample(FILLER, k=random.randint(1, 2))
@@ -73,7 +86,8 @@ def generate_content():
     return " ".join(sentences)
 
 
-def insert_page(cur, url, title, content, content_hash):
+
+def insert_page(cur, url, title, extracted_content, content_hash,etag,state_content,original_disappear):
     """Inserts a page into 'pages' (original, readable text) and mirrors
     a STEMMED version of title/content into 'pages_fts' (no triggers, so
     this has to be done manually, using the same rowid).
@@ -83,14 +97,14 @@ def insert_page(cur, url, title, content, content_hash):
     (see prepare_fts_query in stemizador.py / main.py).
     """
     cur.execute(
-        """INSERT INTO pages (url, title, extracted_content, content_hash)
-           VALUES (?, ?, ?, ?)""",
-        (url, title, content, content_hash),
+        """INSERT INTO pages (url, title, extracted_content, content_hash , etag, state_content, original_disappear)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (url, title, extracted_content, content_hash, etag, state_content, original_disappear),
     )
     page_id = cur.lastrowid
 
     stemmed_title = stem_text(title)
-    stemmed_content = stem_text(content)
+    stemmed_content = stem_text(extracted_content)
 
     cur.execute(
         """INSERT INTO pages_fts (rowid, title, extracted_content)
@@ -147,17 +161,26 @@ def run_comparison(cur, term, total_rows, label):
 def main():
     con = get_connection()
     cur = con.cursor()
+    
+    
+    recreate_tables(cur);
+    
 
     print(f"Inserting {NUM_ROWS} filler rows (content stemmed before indexing)...")
     insert_start = time.perf_counter()
 
     for i in range(NUM_ROWS):
+        is_full = (i % 2 == 0)   # mitad completas, mitad solo snippet
+
         insert_page(
             cur,
             url=f"https://filler.example.com/page-{i}",
             title=f"Filler page {i}",
-            content=generate_content(),
-            content_hash=f"fillerhash{i}",
+            extracted_content=generate_content(),
+            content_hash=f"fillerhash{i}" if is_full else None,
+            etag=f'"etag-{i}"' if is_full else None,
+            state_content='FULL' if is_full else 'SNIPPET',
+            original_disappear = 0 if is_full else 1
         )
 
     # Insert the "needle" page: a unique term that appears nowhere else.
@@ -165,8 +188,11 @@ def main():
         cur,
         url="https://filler.example.com/needle",
         title="Needle page",
-        content=f"Esta única página contiene la palabra {NEEDLE_TERM} para pruebas.",
+        extracted_content=f"Esta única página contiene la palabra {NEEDLE_TERM} para pruebas.",
         content_hash="needlehash",
+        etag='need etag',
+        state_content='Snippet',
+        original_disappear=0
     )
 
     # Insert the two stemming test pages: each uses only one of the two
@@ -176,15 +202,21 @@ def main():
         cur,
         url="https://ejemplo.com/prueba-gestionar",
         title="Cómo gestionar un proyecto pequeño",
-        content="Gestionar un proyecto con pocos recursos exige priorizar bien las tareas desde el principio.",
+        extracted_content="Gestionar un proyecto con pocos recursos exige priorizar bien las tareas desde el principio.",
         content_hash="stemtest-gestionar",
+        etag='need etag',
+        state_content='Snippet',
+        original_disappear=0
     )
     insert_page(
         cur,
         url="https://ejemplo.com/prueba-gestion",
         title="La importancia de la buena gestión",
-        content="Una buena gestión del tiempo evita que el equipo se disperse en detalles poco importantes.",
+        extracted_content="Una buena gestión del tiempo evita que el equipo se disperse en detalles poco importantes.",
         content_hash="stemtest-gestion",
+        etag='need etag',
+        state_content='Snippet',
+        original_disappear=0
     )
 
     con.commit()
