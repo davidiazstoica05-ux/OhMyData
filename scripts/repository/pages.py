@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+
 # Makes sure the 'scripts/' folder is always on sys.path, regardless of
 # whether this file is imported via main.py or run/imported from
 # somewhere else (e.g. scripts/testing/). Without this, "from steming
@@ -10,6 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from steming import stem_text
 from freshness.hash_utils import compare_hashes
+
+
 
 def insert_page(cur, url, title, extracted_content, content_hash, etag, state_content, original_disappear, last_modified_header):
     """Inserts a page into 'pages' (original, readable text) and mirrors
@@ -139,7 +142,51 @@ def mark_verified(cur, page_id, etag=None, last_modified=None):
         (etag, last_modified, page_id),
     )
           
+          
+def mark_not_found(cur, status_code, page_id):
     
+    if status_code == 404 or status_code == 410: 
+        
+        cur.execute(
+            
+            """
+            
+            UPDATE pages 
+            SET  original_disappear = 1
+            WHERE id = ? 
+            
+            """, 
+            (page_id,)
+                
+        )
+        
+        return 'gone'
+    
+    elif status_code == 200 or status_code == 304: 
+        
+        cur.execute(
+            
+            """
+            
+            UPDATE pages 
+            SET  original_disappear = 0
+            WHERE id = ? 
+            
+            """, 
+            (page_id,)
+             
+        )
+        return "exists"  
+    
+    else: 
+        
+        return "unknown" 
+        
+       
+
+        
+        
+        
     
 
         

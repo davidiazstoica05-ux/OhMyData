@@ -32,8 +32,8 @@ Orden de trabajo recomendado: esquema y repositorio primero (desbloquean todo lo
 - [x] Guardar una página **solo con snippet** (título, URL, snippet de SearXNG), stemizando el snippet para `pages_fts`. Usa `findPageByUrl` para no duplicar.
 - [x] `insert_page` acepta y guarda las cabeceras nuevas.
 - [x] Función para **sustituir el contenido** de una página ya existente (snippet → completo, o versión vieja → nueva). Trampa clave: antes de sobrescribir, borrar la entrada de `pages_fts` pasando **exactamente los valores stemizados que se indexaron** (recalculados con `stem_text` sobre el texto viejo), y luego insertar los nuevos. Nunca usar el comando `rebuild` de FTS5.
-- [ ] Función para marcar una página como verificada (solo actualiza `last_verified_at`).
-- [ ] Función para marcar una página como "original desaparecido", sin borrar la copia.
+- [x] Función para marcar una página como verificada (solo actualiza `last_verified_at`).
+- [x] Función para marcar una página como "original desaparecido", sin borrar la copia.
 
 ## 4. `repository/searches.py` — completar
 
