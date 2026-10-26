@@ -9,6 +9,9 @@ from db.connection import get_connection
 from steming import stem_text
 import freshness.hash_utils
 
+from contextlib import contextmanager
+import uuid
+
 
 
 def replace_content(cur, page_id, new_content, new_hash, etag, last_modified):
